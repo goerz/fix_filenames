@@ -123,10 +123,11 @@ def main(argv=None):
         description = __doc__)
         arg_parser.add_option(
           '--logfile', action='store', dest='logfile',
-          default='fix_filenames.log', help="Name of logfile")
+          default='fix_filenames.log', help="Name of logfile. "
+          "Default: fix_filenames.log")
         arg_parser.add_option(
           '--encoding', action='store', dest='encoding',
-          default='utf-8', help="Encoding of filesystem")
+          default='utf-8', help="Encoding of filesystem. Default: utf-8")
         arg_parser.add_option(
           '-n', '--dry-run', action='store_true', dest='dry_run',
           help="Dry-run, don't rename any files")
