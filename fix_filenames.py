@@ -131,6 +131,9 @@ def main(argv=None):
           '-n', '--dry-run', action='store_true', dest='dry_run',
           help="Dry-run, don't rename any files")
         arg_parser.add_option(
+          '-y', action='store_true', dest='dont_ask',
+          help="Do not ask for confirmation before renaming files")
+        arg_parser.add_option(
           '--replacements', action='store', dest='replacements',
           help="Name of file containing replacements. File must contain pairs "
           "of lines. Each first line must contain a string to be replaced "
@@ -161,6 +164,14 @@ def main(argv=None):
             repl_fh.close()
         except IOError:
             pass
+    if options.dry_run:
+        print "Dry Run. No files will be renamed"
+        logging.info("Dry Run. No files will be renamed")
+    if not options.dry_run and not options.dont_ask:
+        answer = raw_input("This script will rename files on your hard drive. "
+                "Are you sure you want to continue? yes/[no]: ")
+        if answer != 'yes':
+            return 0
     for arg in args[1:]:
         path, name = os.path.split(arg)
         if path != '':
