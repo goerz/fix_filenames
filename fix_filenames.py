@@ -8,6 +8,7 @@ consist of 'safe' ASCII characters.
 
 import os
 import sys
+import shutil
 from optparse import OptionParser
 from glob import glob
 
@@ -111,7 +112,7 @@ def fix_non_ascii_name(name, options):
             logging.info("mv '%s' -> '%s'", name, new_dirname)
             if not options.dry_run:
                 try:
-                    os.rename(name, new_dirname)
+                    shutil.move(name, new_dirname)
                 except OSError, message:
                     logging.warn("ERROR: Could not move %s to %s: %s"
                                  %(name, new_dirname, message))
@@ -123,7 +124,7 @@ def fix_non_ascii_name(name, options):
             logging.info("mv '%s' -> '%s'", name, new_filename)
             if not options.dry_run:
                 try:
-                    os.rename(name, new_filename)
+                    shutil.move(name, new_filename)
                 except OSError, message:
                     logging.warn("ERROR: Could not rename %s to %s: %s"
                                  % (name, new_filename, message))
