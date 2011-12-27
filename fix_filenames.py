@@ -93,7 +93,8 @@ def fix_non_ascii_name(name, options):
         if new_filename != name:
             print "MOVE '%s' -> '%s'" % (name, new_filename)
             logging.info("mv '%s' -> '%s'", name, new_filename)
-            #os.rename(name, new_filename)
+            if not options.dry_run:
+                os.rename(name, new_filename)
     else:
         print "In %s, skipping %s" % (os.getcwd(), name)
 
@@ -111,6 +112,9 @@ def main(argv=None):
         arg_parser.add_option(
           '--encoding', action='store', dest='encoding',
           default='utf-8', help="Encoding of filesystem")
+        arg_parser.add_option(
+          '-n', '--dry-run', action='store_true', dest='dry_run',
+          help="Dry-run, don't rename any files")
         options, args = arg_parser.parse_args(argv)
     cwd = os.getcwd()
     logging.basicConfig(filename=options.logfile, format='%(message)s',
