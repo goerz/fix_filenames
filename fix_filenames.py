@@ -159,7 +159,7 @@ def main(argv=None):
                 orig = orig[:-1].decode('unicode-escape')
                 repl = repl[:-1]
                 REPL[orig] = repl
-                print "%s -> %s" % (orig, repl)
+                print "%s -> %s" % (orig.encode('unicode-escape'), repl)
             print ""
             repl_fh.close()
         except IOError:
