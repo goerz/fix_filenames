@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -8,6 +8,7 @@ consist of 'safe' ASCII characters.
 
 import os
 import sys
+from optparse import OptionParser
 from glob import glob
 
 import logging
@@ -100,9 +101,17 @@ def main(argv=None):
     """ Run program """
     if argv is None:
         argv = sys.argv
+        arg_parser = OptionParser(
+        usage = "usage: %prog [options] PATH",
+        description = __doc__)
+        arg_parser.add_option(
+          '--logfile', action='store', dest='logfile',
+          default='fix_filenames.log', help="Name of logfile")
+        options, args = arg_parser.parse_args(argv)
     cwd = os.getcwd()
-    logging.basicConfig(filename='fix_filenames.log', format='%(message)s', 
+    logging.basicConfig(filename=options.logfile, format='%(message)s',
                         filemode='w', level=logging.INFO)
+    for arg in args[1:]:
     for arg in argv[1:]:
         path, name = os.path.split(arg)
         if path != '':
