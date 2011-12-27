@@ -54,11 +54,12 @@ def enter_rule(orig_name, new_name):
     REPL[orig] = repl
 
 
-def get_new_filename(old_filename):
+def get_new_filename(old_filename, encoding='utf-8'):
     """ Perform all necessary replacements in old_filename, and return the
-        result
+        result. Input and output are assumed to be byte-strings with the given
+        encoding.
     """
-    u_new_filename = unicode(old_filename, 'utf-8')
+    u_new_filename = unicode(old_filename, encoding)
     # Replace what we can in first pass
     for orig, repl in REPL.items():
         u_new_filename = u_new_filename.replace(orig, repl)
@@ -68,10 +69,10 @@ def get_new_filename(old_filename):
         enter_rule(old_filename, u_new_filename)
         for orig, repl in REPL.items():
             u_new_filename = u_new_filename.replace(orig, repl)
-    return u_new_filename.encode('ascii', 'replace')
+    return u_new_filename.encode(encoding, 'replace')
 
 
-def fix_non_ascii_name(name):
+def fix_non_ascii_name(name, options):
     """ Recursively rename the file or folder with the given name so that its
         name, and the name of all files it contains only consists of 'safe' ASCII
         characters
@@ -83,12 +84,12 @@ def fix_non_ascii_name(name):
         glob_list = glob('*')
         for item in glob_list:
             item = os.path.split(item)[-1] # strip './'
-            fix_non_ascii_name(item)
+            fix_non_ascii_name(item, options)
         os.chdir('..')
         print "cd %s" % os.getcwd()
         logging.info("cd %s", os.getcwd())
     elif os.path.isfile(name) or os.path.islink(name):
-        new_filename = get_new_filename(name)
+        new_filename = get_new_filename(name, options.encoding)
         if new_filename != name:
             print "MOVE '%s' -> '%s'" % (name, new_filename)
             logging.info("mv '%s' -> '%s'", name, new_filename)
@@ -107,16 +108,18 @@ def main(argv=None):
         arg_parser.add_option(
           '--logfile', action='store', dest='logfile',
           default='fix_filenames.log', help="Name of logfile")
+        arg_parser.add_option(
+          '--encoding', action='store', dest='encoding',
+          default='utf-8', help="Encoding of filesystem")
         options, args = arg_parser.parse_args(argv)
     cwd = os.getcwd()
     logging.basicConfig(filename=options.logfile, format='%(message)s',
                         filemode='w', level=logging.INFO)
     for arg in args[1:]:
-    for arg in argv[1:]:
         path, name = os.path.split(arg)
         if path != '':
             os.chdir(path)
-        fix_non_ascii_name(name)
+        fix_non_ascii_name(name, options)
         os.chdir(cwd)
     return 0
 
