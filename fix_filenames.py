@@ -22,6 +22,18 @@ ALLOWED += u" %\r\n" # this are arguably ok
 REPL = {} # global dict of replacements
 
 
+def write_replacements(filename):
+    """ Write all replacements to a file, in pairs of lines, so that each first
+        line defines a string to be replaced (unicode-escaped), and each second line
+        defines a replacement
+    """
+    repl_fh = open(filename, 'w')
+    for orig, repl in REPL.items():
+        print >> repl_fh, orig.encode('unicode-escape')
+        print >> repl_fh, repl
+    repl_fh.close()
+
+
 def resolved(name):
     """ Return True if the given name contains no illegal characters anymore """
     result = True
@@ -31,7 +43,7 @@ def resolved(name):
     return result
 
 
-def enter_rule(orig_name, new_name):
+def enter_rule(orig_name, new_name, replacements_file=None):
     """ Ask the user for new replacement rule, and store it.
     """
     print ""
@@ -52,9 +64,11 @@ def enter_rule(orig_name, new_name):
             continue
     print ""
     REPL[orig] = repl
+    if replacements_file is not None:
+        write_replacements(replacements_file)
 
 
-def get_new_filename(old_filename, encoding='utf-8'):
+def get_new_filename(old_filename, encoding='utf-8', replacements_file=None):
     """ Perform all necessary replacements in old_filename, and return the
         result. Input and output are assumed to be byte-strings with the given
         encoding.
@@ -66,7 +80,7 @@ def get_new_filename(old_filename, encoding='utf-8'):
     while not resolved(u_new_filename):
         # If the first pass didn't resolve all illegal characters, we have to
         # ask for additional replacement rules and apply those as well
-        enter_rule(old_filename, u_new_filename)
+        enter_rule(old_filename, u_new_filename, replacements_file)
         for orig, repl in REPL.items():
             u_new_filename = u_new_filename.replace(orig, repl)
     return u_new_filename.encode(encoding, 'replace')
@@ -89,7 +103,8 @@ def fix_non_ascii_name(name, options):
         print "cd %s" % os.getcwd()
         logging.info("cd %s", os.getcwd())
     elif os.path.isfile(name) or os.path.islink(name):
-        new_filename = get_new_filename(name, options.encoding)
+        new_filename = get_new_filename(name, options.encoding,
+                                        options.replacements)
         if new_filename != name:
             print "MOVE '%s' -> '%s'" % (name, new_filename)
             logging.info("mv '%s' -> '%s'", name, new_filename)
@@ -115,12 +130,37 @@ def main(argv=None):
         arg_parser.add_option(
           '-n', '--dry-run', action='store_true', dest='dry_run',
           help="Dry-run, don't rename any files")
+        arg_parser.add_option(
+          '--replacements', action='store', dest='replacements',
+          help="Name of file containing replacements. File must contain pairs "
+          "of lines. Each first line must contain a string to be replaced "
+          "(with unicode escapes). Each second line must contain a replacement "
+          "string. Interactively defined replacements will be added to the "
+          "file.")
         options, args = arg_parser.parse_args(argv)
     cwd = os.getcwd()
     logging.basicConfig(filename=options.logfile, format='%(message)s',
                         filemode='w', level=logging.INFO)
     if len(args) <= 1:
         arg_parser.error("Nothing to operate on. Specify FOLDER.")
+    if options.replacements is not None:
+        options.replacements = os.path.abspath(options.replacements)
+        try:
+            repl_fh = open(options.replacements)
+            print "Initial replacement rules: "
+            while True:
+                orig = repl_fh.readline()
+                repl = repl_fh.readline()
+                if (orig == '' or repl == ''):
+                    break
+                orig = orig[:-1].decode('unicode-escape')
+                repl = repl[:-1]
+                REPL[orig] = repl
+                print "%s -> %s" % (orig, repl)
+            print ""
+            repl_fh.close()
+        except IOError:
+            pass
     for arg in args[1:]:
         path, name = os.path.split(arg)
         if path != '':
