@@ -104,7 +104,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
         arg_parser = OptionParser(
-        usage = "usage: %prog [options] PATH",
+        usage = "usage: %prog [options] FOLDER",
         description = __doc__)
         arg_parser.add_option(
           '--logfile', action='store', dest='logfile',
@@ -119,6 +119,8 @@ def main(argv=None):
     cwd = os.getcwd()
     logging.basicConfig(filename=options.logfile, format='%(message)s',
                         filemode='w', level=logging.INFO)
+    if len(args) <= 1:
+        arg_parser.error("Nothing to operate on. Specify FOLDER.")
     for arg in args[1:]:
         path, name = os.path.split(arg)
         if path != '':
