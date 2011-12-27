@@ -110,7 +110,11 @@ def fix_non_ascii_name(name, options):
             print "MOVE DIR '%s' -> '%s'" % (name, new_dirname)
             logging.info("mv '%s' -> '%s'", name, new_dirname)
             if not options.dry_run:
-                os.rename(name, new_dirname)
+                try:
+                    os.rename(name, new_dirname)
+                except OSError, message:
+                    logging.warn("ERROR: Could not move %s to %s: %s"
+                                 %(name, new_dirname, message))
     elif os.path.isfile(name) or os.path.islink(name):
         new_filename = get_new_filename(name, options.allowed, options.encoding,
                                         options.replacements)
@@ -118,7 +122,11 @@ def fix_non_ascii_name(name, options):
             print "MOVE '%s' -> '%s'" % (name, new_filename)
             logging.info("mv '%s' -> '%s'", name, new_filename)
             if not options.dry_run:
-                os.rename(name, new_filename)
+                try:
+                    os.rename(name, new_filename)
+                except OSError, message:
+                    logging.warn("ERROR: Could not rename %s to %s: %s"
+                                 % (name, new_filename, message))
     else:
         print "In %s, skipping %s" % (os.getcwd(), name)
 
