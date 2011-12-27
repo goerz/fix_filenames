@@ -17,7 +17,8 @@ ALLOWED  = u"abcdefghijklmnopqrstuvwxyz"
 ALLOWED += u"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ALLOWED += u"0123456789"
 ALLOWED += u"_-[]*(){}.,;+^!&#$=@'~"
-ALLOWED += u" %\r\n" # this are arguably ok
+ALLOWED += u'"'
+ALLOWED += u" "
 
 REPL = {} # global dict of replacements
 
@@ -34,11 +35,11 @@ def write_replacements(filename):
     repl_fh.close()
 
 
-def resolved(name):
+def resolved(name, allowed=ALLOWED):
     """ Return True if the given name contains no illegal characters anymore """
     result = True
     for char in list(name):
-        if char not in ALLOWED:
+        if char not in allowed:
             result = False
     return result
 
@@ -68,7 +69,8 @@ def enter_rule(orig_name, new_name, replacements_file=None):
         write_replacements(replacements_file)
 
 
-def get_new_filename(old_filename, encoding='utf-8', replacements_file=None):
+def get_new_filename(old_filename, allowed=ALLOWED, encoding='utf-8',
+                     replacements_file=None):
     """ Perform all necessary replacements in old_filename, and return the
         result. Input and output are assumed to be byte-strings with the given
         encoding.
@@ -77,7 +79,7 @@ def get_new_filename(old_filename, encoding='utf-8', replacements_file=None):
     # Replace what we can in first pass
     for orig, repl in REPL.items():
         u_new_filename = u_new_filename.replace(orig, repl)
-    while not resolved(u_new_filename):
+    while not resolved(u_new_filename, allowed):
         # If the first pass didn't resolve all illegal characters, we have to
         # ask for additional replacement rules and apply those as well
         enter_rule(old_filename, u_new_filename, replacements_file)
@@ -103,7 +105,7 @@ def fix_non_ascii_name(name, options):
         print "cd %s" % os.getcwd()
         logging.info("cd %s", os.getcwd())
     elif os.path.isfile(name) or os.path.islink(name):
-        new_filename = get_new_filename(name, options.encoding,
+        new_filename = get_new_filename(name, options.allowed, options.encoding,
                                         options.replacements)
         if new_filename != name:
             print "MOVE '%s' -> '%s'" % (name, new_filename)
@@ -118,30 +120,41 @@ def main(argv=None):
     """ Run program """
     if argv is None:
         argv = sys.argv
-        arg_parser = OptionParser(
-        usage = "usage: %prog [options] FOLDER",
-        description = __doc__)
-        arg_parser.add_option(
-          '--logfile', action='store', dest='logfile',
-          default='fix_filenames.log', help="Name of logfile. "
-          "Default: fix_filenames.log")
-        arg_parser.add_option(
-          '--encoding', action='store', dest='encoding',
-          default='utf-8', help="Encoding of filesystem. Default: utf-8")
-        arg_parser.add_option(
-          '-n', '--dry-run', action='store_true', dest='dry_run',
-          help="Dry-run, don't rename any files")
-        arg_parser.add_option(
-          '-y', action='store_true', dest='dont_ask',
-          help="Do not ask for confirmation before renaming files")
-        arg_parser.add_option(
-          '--replacements', action='store', dest='replacements',
-          help="Name of file containing replacements. File must contain pairs "
-          "of lines. Each first line must contain a string to be replaced "
-          "(with unicode escapes). Each second line must contain a replacement "
-          "string. Interactively defined replacements will be added to the "
-          "file.")
-        options, args = arg_parser.parse_args(argv)
+    arg_parser = OptionParser(
+    usage = "usage: %prog [options] FOLDER",
+    description = __doc__)
+    arg_parser.add_option(
+        '--logfile', action='store', dest='logfile',
+        default='fix_filenames.log', help="Name of logfile. "
+        "Default: fix_filenames.log")
+    arg_parser.add_option(
+        '--encoding', action='store', dest='encoding',
+        default='utf-8', help="Encoding of filesystem. Default: utf-8")
+    arg_parser.add_option(
+        '-n', '--dry-run', action='store_true', dest='dry_run',
+        help="Dry-run, don't rename any files")
+    arg_parser.add_option(
+        '-y', action='store_true', dest='dont_ask',
+        help="Do not ask for confirmation before renaming files")
+    arg_parser.add_option(
+        '--replacements', action='store', dest='replacements',
+        help="Name of file containing replacements. File must contain pairs "
+        "of lines. Each first line must contain a string to be replaced "
+        "(with unicode escapes). Each second line must contain a replacement "
+        "string. Interactively defined replacements will be added to the "
+        "file.")
+    arg_parser.add_option(
+        '--allowed', action='store', dest='allowed', default='',
+        help="String of characters to be added to the default set of "
+        "allowed characters (unicode-escaped). The default character set "
+        "consists of the english alphabet, digits, space, and the characters "
+        "_-[]*(){}\",;+^!&#$=@~. For example, --allowed='\\n\\r'")
+    arg_parser.add_option(
+        '--forbidden', action='store', dest='forbidden', default='',
+        help="String of characters to be removed from the default set of "
+        "allowed characters. For example, to not allowed spaces in filenames, "
+        "use --forbidden=' '")
+    options, args = arg_parser.parse_args(argv)
     cwd = os.getcwd()
     logging.basicConfig(filename=options.logfile, format='%(message)s',
                         filemode='w', level=logging.INFO)
@@ -173,6 +186,20 @@ def main(argv=None):
                 "Are you sure you want to continue? yes/[no]: ")
         if answer != 'yes':
             return 0
+    try:
+        options.allowed = options.allowed.decode('unicode-escape')
+    except UnicodeDecodeError, message:
+        arg_parser.error("allowed options: %s" % message)
+    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
+    options.allowed += ALLOWED
+    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
+    try:
+        options.forbidden = options.forbidden.decode('unicode-escape')
+    except UnicodeDecodeError, message:
+        arg_parser.error("allowed options: %s" % message)
+    for char in options.forbidden:
+        options.allowed = options.allowed.replace(char, '')
+    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
     for arg in args[1:]:
         path, name = os.path.split(arg)
         if path != '':
