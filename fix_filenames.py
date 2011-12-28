@@ -48,6 +48,23 @@ def file_folder_cmp(f1, f2):
     return False
 
 
+def safe_chdir(folder):
+    """ Change the current directory to the given folders, print/log where we
+        are, and return True. If folder cannot be changed, stay where we are and
+        return False.
+    """
+    try:
+        os.chdir(folder)
+        success = True
+    except OSError, message:
+        print "ERROR: Can't change to %s: %s" % (folder, message)
+        logging.error("ERROR: Can't change to %s: %s", folder, message)
+        success = False
+    print "cd %s" % os.getcwd()
+    logging.info("cd %s", os.getcwd())
+    return success
+
+
 def write_replacements(filename):
     """ Write all replacements to a file, in pairs of lines, so that each first
         line defines a string to be replaced (unicode-escaped), and each second
@@ -214,16 +231,14 @@ def fix_non_ascii_name(name, options):
         ASCII characters
     """
     if os.path.isdir(name) and not os.path.islink(name):
-        os.chdir(name)
-        print "cd %s" % os.getcwd()
-        logging.info("cd %s", os.getcwd())
+        success = safe_chdir(name)
+        if not success:
+            return
         glob_list = glob('*')
         for item in glob_list:
             item = os.path.split(item)[-1] # strip './'
             fix_non_ascii_name(item, options)
-        os.chdir('..')
-        print "cd %s" % os.getcwd()
-        logging.info("cd %s", os.getcwd())
+        safe_chdir('..')
         new_dirname = get_new_filename(name, options.allowed, options.encoding,
                                         options.replacements)
         if new_dirname != name:
@@ -331,14 +346,12 @@ def main(argv=None):
     print "Allowed characters: %s" % options.allowed.encode('unicode-escape')
     for arg in args[1:]:
         path, name = os.path.split(arg)
+        success = True
         if path != '':
-            os.chdir(path)
-            print "cd %s" % os.getcwd()
-            logging.info("cd %s", os.getcwd())
-        fix_non_ascii_name(name, options)
-        os.chdir(cwd)
-        print "cd %s" % os.getcwd()
-        logging.info("cd %s", os.getcwd())
+            success = safe_chdir(path)
+        if success:
+            fix_non_ascii_name(name, options)
+        safe_chdir(cwd)
     return 0
 
 
