@@ -9,6 +9,7 @@ consist of 'safe' ASCII characters.
 import os
 import sys
 import shutil
+import filecmp
 from optparse import OptionParser
 from glob import glob
 
@@ -111,11 +112,33 @@ def fix_non_ascii_name(name, options):
             print "MOVE DIR '%s' -> '%s'" % (name, new_dirname)
             logging.info("mv '%s' -> '%s'", name, new_dirname)
             if not options.dry_run:
-                try:
-                    shutil.move(name, new_dirname)
-                except OSError, message:
-                    logging.warn("ERROR: Could not move %s to %s: %s"
-                                 %(name, new_dirname, message))
+                if os.path.islink(new_dirname):
+                    os.unlink(new_dirname)
+                    # unlinking should be safe, because the data exists
+                    # elsewhere
+                    print "WARN: Removed existing link %s"  % new_dirname
+                    logging.warn("WARN: Removed existing link %s",
+                                 new_dirname)
+                if os.path.isfile(new_dirname):
+                    message = "%s is an existing file" % new_dirname
+                    print "ERROR: Could not rename %s to %s: %s" \
+                            % (name, new_dirname, message)
+                    logging.warn("ERROR: Could not rename %s to %s: %s",
+                                    name, new_dirname, message)
+                if os.path.isdir(new_dirname):
+                    message = "%s is an existing directory" % new_dirname
+                    print "ERROR: Could not rename %s to %s: %s" \
+                            % (name, new_dirname, message)
+                    logging.warn("ERROR: Could not rename %s to %s: %s",
+                                    name, new_dirname, message)
+                else:
+                    try:
+                        shutil.move(name, new_dirname)
+                    except OSError, message:
+                        print "ERROR: Could not move %s to %s: %s" \
+                            % (name, new_dirname, message)
+                        logging.warn("ERROR: Could not move %s to %s: %s",
+                                    name, new_dirname, message)
     elif os.path.isfile(name) or os.path.islink(name):
         new_filename = get_new_filename(name, options.allowed, options.encoding,
                                         options.replacements)
@@ -123,11 +146,44 @@ def fix_non_ascii_name(name, options):
             print "MOVE '%s' -> '%s'" % (name, new_filename)
             logging.info("mv '%s' -> '%s'", name, new_filename)
             if not options.dry_run:
-                try:
-                    shutil.move(name, new_filename)
-                except OSError, message:
-                    logging.warn("ERROR: Could not rename %s to %s: %s"
-                                 % (name, new_filename, message))
+                if os.path.islink(new_filename):
+                    os.unlink(new_filename)
+                    # unlinking should be safe, because the data exists
+                    # elsewhere
+                    print "WARN: Removed existing link %s"  % new_filename
+                    logging.warn("WARN: Removed existing link %s",
+                                 new_filename)
+                if os.path.isfile(new_filename):
+                    # If new_filename already exists and the file is identical
+                    # to the source file, we can simply delete the source file
+                    try:
+                        if filecmp.cmp(name, new_filename):
+                            logging.info("rm '%s'", name)
+                            os.unlink(name)
+                        else:
+                            print "ERROR: Non-identical files %s and %s "\
+                                  "exist already" % (name, new_filename)
+                            logging.warn("ERROR: Non-identical files %s and %s "
+                                         "exist already", name, new_filename)
+                    except OSError, message:
+                        print "ERROR: Could not delete %s: %s" \
+                              % ( name, message)
+                        logging.warn("ERROR: Could not delete %s: %s",
+                                        name, message)
+                elif os.path.isdir(new_filename):
+                    message = "%s is an existing folder" % new_filename
+                    print "ERROR: Could not rename %s to %s: %s" \
+                            % (name, new_filename, message)
+                    logging.warn("ERROR: Could not rename %s to %s: %s",
+                                    name, new_filename, message)
+                else:
+                    try:
+                        shutil.move(name, new_filename)
+                    except OSError, message:
+                        print "ERROR: Could not rename %s to %s: %s" \
+                               % (name, new_filename, message)
+                        logging.warn("ERROR: Could not rename %s to %s: %s",
+                                     name, new_filename, message)
     else:
         print "In %s, skipping %s" % (os.getcwd(), name)
 
