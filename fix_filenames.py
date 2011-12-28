@@ -25,6 +25,13 @@ ALLOWED += u" "
 REPL = {} # global dict of replacements
 
 
+def file_folder_cmp(f1, f2):
+    """ Compare given files or folders """
+    if os.path.isfile(f1) and os.path.isfile(f2):
+        return filecmp.cmp(f1, f2)
+    return False
+
+
 def write_replacements(filename):
     """ Write all replacements to a file, in pairs of lines, so that each first
         line defines a string to be replaced (unicode-escaped), and each second line
@@ -104,7 +111,7 @@ def safe_file_rename(from_name, to_name):
         # If to_name already exists and the file is identical to the source
         # file, we can simply delete the source file
         try:
-            if filecmp.cmp(from_name, to_name):
+            if file_folder_cmp(from_name, to_name):
                 logging.info("rm '%s'", from_name)
                 os.unlink(from_name)
             else:
