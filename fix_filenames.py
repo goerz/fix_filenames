@@ -78,8 +78,12 @@ def enter_rule(orig_name, new_name, allowed=ALLOWED, replacements_file=None):
     print "Illegal characters:"
     for letter in new_name:
         if letter not in allowed:
-            print "%s: %s" \
-            % (letter.encode('unicode-escape'), unicodedata.name(letter))
+            letter_escaped = letter.encode('unicode-escape')
+            try:
+                letter_name = unicodedata.name(letter)
+            except ValueError:
+                letter_name = 'n/a'
+            print "%s: %s" % (letter_escaped, letter_name)
     print ""
     while True:
         orig = raw_input(u"Enter string to be replaced: ")
