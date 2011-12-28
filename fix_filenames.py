@@ -307,6 +307,8 @@ def main(argv=None):
         except IOError:
             # file doesn't exist yet, but that's okay
             pass
+    print "Using filesystem encoding %s" % options.encoding
+    logging.info("Using filesystem encoding %s", options.encoding)
     if options.dry_run:
         print "Dry Run. No files will be renamed"
         logging.info("Dry Run. No files will be renamed")
