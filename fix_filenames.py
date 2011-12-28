@@ -30,13 +30,28 @@ def file_folder_cmp(f1, f2):
     """ Compare given files or folders """
     if os.path.isfile(f1) and os.path.isfile(f2):
         return filecmp.cmp(f1, f2)
+    if os.path.isdir(f1) and os.path.isdir(f2):
+        diff = filecmp.dircmp(f1, f2)
+        if len(diff.diff_files) > 0:
+            return False
+        if len(diff.funny_files) > 0:
+            return False
+        if len(diff.left_only) > 0:
+            return False
+        if len(diff.right_only) > 0:
+            return False
+        for directory in diff.common_dirs:
+            if not file_folder_cmp(os.path.join(f1, directory),
+                                   os.path.join(f2, directory)):
+                return False
+        return True
     return False
 
 
 def write_replacements(filename):
     """ Write all replacements to a file, in pairs of lines, so that each first
-        line defines a string to be replaced (unicode-escaped), and each second line
-        defines a replacement
+        line defines a string to be replaced (unicode-escaped), and each second
+        line defines a replacement
     """
     repl_fh = open(filename, 'w')
     for orig, repl in REPL.items():
@@ -124,16 +139,16 @@ def safe_file_rename(from_name, to_name):
             else:
                 print "ERROR: Non-identical files %s and %s exist already" \
                       % (from_name, to_name)
-                logging.warn("ERROR: Non-identical files %s and %s "
+                logging.error("ERROR: Non-identical files %s and %s "
                              "exist already", from_name, to_name)
         except (IOError, OSError) as message:
             print "ERROR: Could not delete %s: %s" % ( from_name, message)
-            logging.warn("ERROR: Could not delete %s: %s", from_name, message)
+            logging.error("ERROR: Could not delete %s: %s", from_name, message)
     elif os.path.isdir(to_name):
         message = "%s is an existing folder" % to_name
         print "ERROR: Could not rename %s to %s: %s" \
                 % (from_name, to_name, message)
-        logging.warn("ERROR: Could not rename %s to %s: %s",
+        logging.error("ERROR: Could not rename %s to %s: %s",
                      from_name, to_name, message)
     else:
         try:
@@ -141,7 +156,7 @@ def safe_file_rename(from_name, to_name):
         except (IOError, OSError) as message:
             print "ERROR: Could not rename %s to %s: %s" \
                 % (from_name, to_name, message)
-            logging.warn("ERROR: Could not rename %s to %s: %s",
+            logging.error("ERROR: Could not rename %s to %s: %s",
                         from_name, to_name, message)
 
 
@@ -160,28 +175,39 @@ def safe_dir_rename(from_name, to_name):
         message = "%s is an existing file" % to_name
         print "ERROR: Could not rename %s to %s: %s" \
                 % (from_name, to_name, message)
-        logging.warn("ERROR: Could not rename %s to %s: %s",
+        logging.error("ERROR: Could not rename %s to %s: %s",
                         from_name, to_name, message)
     if os.path.isdir(to_name):
-        message = "%s is an existing directory" % to_name
-        print "ERROR: Could not rename %s to %s: %s" \
-                % (from_name, to_name, message)
-        logging.warn("ERROR: Could not rename %s to %s: %s",
-                        from_name, to_name, message)
+        # If to_name already exists and directory and its contents is identical
+        # to the source directory, we can simply delete the source directory
+        try:
+            if file_folder_cmp(from_name, to_name):
+                logging.info("rm -r '%s'", from_name)
+                shutil.rmtree(from_name)
+            else:
+                print "ERROR: Non-identical folders %s and %s exist already" \
+                      % (from_name, to_name)
+                logging.error("ERROR: Non-identical folders %s and %s "
+                             "exist already", from_name, to_name)
+        except (IOError, OSError) as message:
+            print "ERROR: Could not delete folder %s: %s" \
+                  % ( from_name, message)
+            logging.error("ERROR: Could not delete folder %s: %s",
+                         from_name, message)
     else:
         try:
             shutil.move(from_name, to_name)
         except (IOError, OSError) as message:
-            print "ERROR: Could not move %s to %s: %s" \
+            print "ERROR: Could not rename folder %s to %s: %s" \
                 % (from_name, to_name, message)
-            logging.warn("ERROR: Could not move %s to %s: %s",
+            logging.error("ERROR: Could not rename folder %s to %s: %s",
                         from_name, to_name, message)
 
 
 def fix_non_ascii_name(name, options):
     """ Recursively rename the file or folder with the given name so that its
-        name, and the name of all files it contains only consists of 'safe' ASCII
-        characters
+        name, and the name of all files it contains only consists of 'safe'
+        ASCII characters
     """
     if os.path.isdir(name) and not os.path.islink(name):
         os.chdir(name)
