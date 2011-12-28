@@ -10,6 +10,7 @@ import os
 import sys
 import shutil
 import filecmp
+import unicodedata
 from optparse import OptionParser
 from glob import glob
 
@@ -53,12 +54,17 @@ def resolved(name, allowed=ALLOWED):
     return result
 
 
-def enter_rule(orig_name, new_name, replacements_file=None):
+def enter_rule(orig_name, new_name, allowed=ALLOWED, replacements_file=None):
     """ Ask the user for new replacement rule, and store it.
     """
     print ""
-    print "Original  : %s" % orig_name
+    print "Original  : %s" % orig_name.encode('unicode-escape')
     print "Unresolved: %s" % new_name.encode('unicode-escape')
+    print "Illegal characters:"
+    for letter in new_name:
+        if letter not in allowed:
+            print "%s: %s" \
+            % (letter.encode('unicode-escape'), unicodedata.name(letter))
     print ""
     while True:
         orig = raw_input(u"Enter string to be replaced: ")
@@ -84,6 +90,7 @@ def get_new_filename(old_filename, allowed=ALLOWED, encoding='utf-8',
         result. Input and output are assumed to be byte-strings with the given
         encoding.
     """
+    u_old_filename = unicode(old_filename, encoding)
     u_new_filename = unicode(old_filename, encoding)
     # Replace what we can in first pass
     for orig, repl in REPL.items():
@@ -91,7 +98,7 @@ def get_new_filename(old_filename, allowed=ALLOWED, encoding='utf-8',
     while not resolved(u_new_filename, allowed):
         # If the first pass didn't resolve all illegal characters, we have to
         # ask for additional replacement rules and apply those as well
-        enter_rule(old_filename, u_new_filename, replacements_file)
+        enter_rule(u_old_filename, u_new_filename, allowed, replacements_file)
         for orig, repl in REPL.items():
             u_new_filename = u_new_filename.replace(orig, repl)
     return u_new_filename.encode(encoding, 'replace')
