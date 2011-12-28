@@ -262,16 +262,14 @@ def main(argv=None):
         options.allowed = options.allowed.decode('unicode-escape')
     except UnicodeDecodeError, message:
         arg_parser.error("allowed options: %s" % message)
-    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
     options.allowed += ALLOWED
-    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
     try:
         options.forbidden = options.forbidden.decode('unicode-escape')
     except UnicodeDecodeError, message:
         arg_parser.error("allowed options: %s" % message)
     for char in options.forbidden:
         options.allowed = options.allowed.replace(char, '')
-    print "allowed characters: %s" % options.allowed.encode('unicode-escape')
+    print "Allowed characters: %s" % options.allowed.encode('unicode-escape')
     for arg in args[1:]:
         path, name = os.path.split(arg)
         if path != '':
