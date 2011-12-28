@@ -112,7 +112,7 @@ def safe_file_rename(from_name, to_name):
                       % (from_name, to_name)
                 logging.warn("ERROR: Non-identical files %s and %s "
                              "exist already", from_name, to_name)
-        except OSError, message:
+        except (IOError, OSError) as message:
             print "ERROR: Could not delete %s: %s" % ( from_name, message)
             logging.warn("ERROR: Could not delete %s: %s", from_name, message)
     elif os.path.isdir(to_name):
@@ -124,7 +124,7 @@ def safe_file_rename(from_name, to_name):
     else:
         try:
             shutil.move(from_name, to_name)
-        except OSError, message:
+        except (IOError, OSError) as message:
             print "ERROR: Could not rename %s to %s: %s" \
                 % (from_name, to_name, message)
             logging.warn("ERROR: Could not rename %s to %s: %s",
@@ -157,7 +157,7 @@ def safe_dir_rename(from_name, to_name):
     else:
         try:
             shutil.move(from_name, to_name)
-        except OSError, message:
+        except (IOError, OSError) as message:
             print "ERROR: Could not move %s to %s: %s" \
                 % (from_name, to_name, message)
             logging.warn("ERROR: Could not move %s to %s: %s",
@@ -260,6 +260,7 @@ def main(argv=None):
             print ""
             repl_fh.close()
         except IOError:
+            # file doesn't exist yet, but that's okay
             pass
     if options.dry_run:
         print "Dry Run. No files will be renamed"
