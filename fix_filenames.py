@@ -103,8 +103,8 @@ def enter_rule(orig_name, new_name, allowed=ALLOWED, replacements_file=None):
         write_replacements(replacements_file)
 
 
-def get_new_filename(old_filename, allowed=ALLOWED, encoding='utf-8',
-                     replacements_file=None):
+def get_new_filename(old_filename, allowed=ALLOWED,
+    encoding=sys.getfilesystemencoding(), replacements_file=None):
     """ Perform all necessary replacements in old_filename, and return the
         result. Input and output are assumed to be byte-strings with the given
         encoding.
@@ -256,7 +256,8 @@ def main(argv=None):
         "Default: fix_filenames.log")
     arg_parser.add_option(
         '--encoding', action='store', dest='encoding',
-        default='utf-8', help="Encoding of filesystem. Default: utf-8")
+        default=sys.getfilesystemencoding(), help="Encoding of filesystem. "
+        "Normally, this is detected automatically.")
     arg_parser.add_option(
         '-n', '--dry-run', action='store_true', dest='dry_run',
         help="Dry-run, don't rename any files")
