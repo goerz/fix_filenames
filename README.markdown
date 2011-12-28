@@ -10,15 +10,17 @@ consist of 'safe' ASCII characters.
 
 ## Command Line Options ##
 
-    Usage: fix_filenames.py [options] FOLDER
 
-    Recursively rename all the given files and folders so that their names only
-    consist of 'safe' ASCII characters.
+Usage: fix_filenames.py [options] FOLDER
+
+ Recursively rename all the given files and folders so that their names only
+consist of 'safe' ASCII characters.
 
     Options:
       -h, --help            show this help message and exit
       --logfile=LOGFILE     Name of logfile. Default: fix_filenames.log
-      --encoding=ENCODING   Encoding of filesystem. Default: utf-8
+      --encoding=ENCODING   Encoding of filesystem. Normally, this is detected
+                            automatically.
       -n, --dry-run         Dry-run, don't rename any files
       -y                    Do not ask for confirmation before renaming files
       --replacements=REPLACEMENTS
@@ -48,7 +50,7 @@ should be run again, using the previously generated list of replacements to
 perform all necessary replacements non-interactively.
 
 You may set the set of allowed and forbidden characters depending on your
-operating system and other requirements (e.g. no spaces in filenames). 
+operating system and other requirements (e.g. no spaces in filenames).
 See the [Filename Wikipedia entry][1]
 
 Note that special care must be taken match the encoding to the one that is used
