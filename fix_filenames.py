@@ -326,8 +326,12 @@ def main(argv=None):
         path, name = os.path.split(arg)
         if path != '':
             os.chdir(path)
+            print "cd %s" % os.getcwd()
+            logging.info("cd %s", os.getcwd())
         fix_non_ascii_name(name, options)
         os.chdir(cwd)
+        print "cd %s" % os.getcwd()
+        logging.info("cd %s", os.getcwd())
     return 0
 
 
